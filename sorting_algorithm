@@ -1,0 +1,110 @@
+import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
+import java.awt.*;
+import java.io.*;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.List;
+import com.opencsv.CSVReader;
+
+public class SortingPerformanceEvaluator extends JFrame {
+    private JTable table;
+    private JComboBox<String> columnComboBox;
+    private JTextArea resultArea;
+    private JButton uploadButton, sortButton, exportButton;
+    private List<String[]> csvData = new ArrayList<>();
+    private String[] headers;
+    private Map<String, Integer> numericColumns = new HashMap<>();
+    private boolean resultsGenerated = false;
+
+    public SortingPerformanceEvaluator() {
+        setTitle("Sorting Algorithm Performance Evaluator");
+        setSize(1100, 750);
+        setDefaultCloseOperation(EXIT_ON_CLOSE);
+        setLocationRelativeTo(null);
+        initUI();
+    }
+
+    private void initUI() {
+        JPanel top = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 10));
+        top.setBackground(new Color(40, 110, 180));
+
+        uploadButton = btn("Upload CSV File", new Color(34, 139, 34));
+        columnComboBox = new JComboBox<>();
+        sortButton = btn("Run All Sorting Algorithms", new Color(30, 144, 255));
+        exportButton = btn("Export Results to File", new Color(255, 140, 0));
+        exportButton.setEnabled(false);
+
+        top.add(uploadButton);
+        top.add(new JLabel("<html><b><font color=white>Select Column →</font></b></html>"));
+        top.add(columnComboBox);
+        top.add(sortButton);
+        top.add(Box.createHorizontalStrut(30));
+        top.add(exportButton);
+
+        table = new JTable();
+        table.setRowHeight(28);
+        JScrollPane tablePane = new JScrollPane(table);
+
+        resultArea = new JTextArea(18, 80);
+        resultArea.setFont(new Font("Consolas", Font.PLAIN, 14));
+        resultArea.setBackground(new Color(20, 20, 20));
+        resultArea.setForeground(Color.CYAN);
+        resultArea.setEditable(false);
+        JScrollPane resultPane = new JScrollPane(resultArea);
+
+        add(top, BorderLayout.NORTH);
+        add(tablePane, BorderLayout.CENTER);
+        add(resultPane, BorderLayout.SOUTH);
+
+        uploadButton.addActionListener(e -> uploadCSV());
+        sortButton.addActionListener(e -> runAllSorts());
+        exportButton.addActionListener(e -> exportResults());
+    }
+
+    private JButton btn(String text, Color bg) {
+        JButton b = new JButton(text);
+        b.setForeground(Color.BLACK);
+        b.setBackground(bg);
+        b.setFont(new Font("Arial", Font.BOLD, 13));
+        b.setFocusPainted(false);
+        return b;
+    }
+
+    private void uploadCSV() {
+        JFileChooser fc = new JFileChooser(System.getProperty("user.home") + "/Desktop");
+        if (fc.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+            try (CSVReader r = new CSVReader(new FileReader(fc.getSelectedFile()))) {
+                List<String[]> all = r.readAll();
+                headers = all.get(0);
+                csvData = all.subList(1, all.size());
+
+                numericColumns.clear();
+                columnComboBox.removeAllItems();
+
+                for (int i = 0; i < headers.length; i++) {
+                    boolean isNum = true;
+                    for (String[] row : csvData) {
+                        if (row.length <= i || row[i].trim().isEmpty()) { isNum = false; break; }
+                        try { Double.parseDouble(row[i].trim()); }
+                        catch (NumberFormatException ex) { isNum = false; break; }
+                    }
+                    if (isNum) {
+                        numericColumns.put(headers[i], i);
+                        columnComboBox.addItem(headers[i]);
+                    }
+                }
+
+                DefaultTableModel model = new DefaultTableModel(headers, 0);
+                csvData.forEach(model::addRow);
+                table.setModel(model);
+
+                columnComboBox.setEnabled(true);
+                sortButton.setEnabled(true);
+                resultArea.setText("Loaded: " + csvData.size() + " rows, " + numericColumns.size() + " numeric columns.\n");
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage());
+            }
+        }
+    }
