@@ -1,0 +1,73 @@
+    private void runAllSorts() {
+        String col = (String) columnComboBox.getSelectedItem();
+        int idx = numericColumns.get(col);
+        double[] arr = new double[csvData.size()];
+        for (int i = 0; i < arr.length; i++) arr[i] = Double.parseDouble(csvData.get(i)[idx].trim());
+
+        resultArea.setText("");
+        resultArea.append("Sorting " + arr.length + " values from column: " + col + "\n\n");
+        resultArea.append(String.format("%-18s %s\n", "Algorithm", "Time (ms)"));
+        resultArea.append("──────────────────────────────────────\n");
+
+        Map<String, Long> times = new LinkedHashMap<>();
+        times.put("Insertion Sort", time(() -> insertionSort(arr.clone())));
+        times.put("Shell Sort",     time(() -> shellSort(arr.clone())));
+        times.put("Merge Sort",     time(() -> mergeSort(arr.clone())));
+        times.put("Quick Sort",     time(() -> quickSort(arr.clone(), 0, arr.length-1)));
+        times.put("Heap Sort",      time(() -> heapSort(arr.clone())));
+
+        long best = Long.MAX_VALUE; String winner = "";
+        for (var e : times.entrySet()) {
+            resultArea.append(String.format("%-18s %,8d ms\n", e.getKey(), e.getValue()));
+            if (e.getValue() < best) { best = e.getValue(); winner = e.getKey(); }
+        }
+        resultArea.append("\nBEST → " + winner + " (" + best + " ms)\n");
+        resultsGenerated = true;
+        exportButton.setEnabled(true);
+    }
+
+    private long time(Runnable r) {
+        long s = System.nanoTime();
+        r.run();
+        return (System.nanoTime() - s) / 1_000_000;
+    }
+
+    private void exportResults() {
+        if (!resultsGenerated) return;
+        JFileChooser s = new JFileChooser();
+        s.setSelectedFile(new File("Sorting_Report_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm")) + ".txt"));
+        if (s.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
+            try (PrintWriter w = new PrintWriter(s.getSelectedFile())) {
+                w.println("═".repeat(60));
+                w.println("   SORTING ALGORITHMS PERFORMANCE REPORT");
+                w.println("═".repeat(60));
+                w.println("Date: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd MMMM yyyy, HH:mm")));
+                w.println("Column: " + columnComboBox.getSelectedItem() + " | Rows: " + csvData.size());
+                w.println(resultArea.getText());
+                w.println("═".repeat(60));
+                JOptionPane.showMessageDialog(this, "Report exported successfully!");
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage());
+            }
+        }
+    }
+
+    // Sorting algorithms
+    private void insertionSort(double[] a) { for (int i = 1; i < a.length; i++) { double k = a[i]; int j = i-1; while (j >= 0 && a[j] > k) { a[j+1] = a[j]; j--; } a[j+1] = k; } }
+    private void shellSort(double[] a) { for (int g = a.length/2; g > 0; g /= 2) for (int i = g; i < a.length; i++) { double t = a[i]; int j = i; while (j >= g && a[j-g] > t) { a[j] = a[j-g]; j -= g; } a[j] = t; } }
+    private void mergeSort(double[] a) { if (a.length < 2) return; int m = a.length/2; double[] l = Arrays.copyOfRange(a,0,m); double[] r = Arrays.copyOfRange(a,m,a.length); mergeSort(l); mergeSort(r); int i=0,j=0,k=0; while(i<l.length&&j<r.length) a[k++] = l[i]<=r[j]?l[i++]:r[j++]; while(i<l.length) a[k++]=l[i++]; while(j<r.length) a[k++]=r[j++]; }
+    private void quickSort(double[] a, int low, int high) { if (low < high) { int p = partition(a, low, high); quickSort(a, low, p-1); quickSort(a, p+1, high); } }
+    private int partition(double[] a, int low, int high) { double pivot = a[high]; int i = low - 1; for (int j = low; j < high; j++) if (a[j] <= pivot) swap(a, ++i, j); swap(a, i+1, high); return i+1; }
+    private void heapSort(double[] a) { int n = a.length; for (int i = n/2-1; i >= 0; i--) heapify(a, n, i); for (int i = n-1; i > 0; i--) { swap(a, 0, i); heapify(a, i, 0); } }
+    private void heapify(double[] a, int n, int i) { int largest = i, l = 2*i+1, r = 2*i+2; if (l < n && a[l] > a[largest]) largest = l; if (r < n && a[r] > a[largest]) largest = r; if (largest != i) { swap(a, i, largest); heapify(a, n, largest); } }
+    private void swap(double[] a, int i, int j) { double t = a[i]; a[i] = a[j]; a[j] = t; }
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> {
+            try {
+                UIManager.setLookAndFeel("com.sun.java.swing.plaf.windows.WindowsLookAndFeel");
+            } catch (Exception ignored) {}
+            new SortingPerformanceEvaluator().setVisible(true);
+        });
+    }
+}
