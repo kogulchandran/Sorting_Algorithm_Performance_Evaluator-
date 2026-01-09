@@ -52,7 +52,7 @@
         }
     }
 
-    // Sorting algorithms
+    //All Sorting algorithms
     private void insertionSort(double[] a) { for (int i = 1; i < a.length; i++) { double k = a[i]; int j = i-1; while (j >= 0 && a[j] > k) { a[j+1] = a[j]; j--; } a[j+1] = k; } }
     private void shellSort(double[] a) { for (int g = a.length/2; g > 0; g /= 2) for (int i = g; i < a.length; i++) { double t = a[i]; int j = i; while (j >= g && a[j-g] > t) { a[j] = a[j-g]; j -= g; } a[j] = t; } }
     private void mergeSort(double[] a) { if (a.length < 2) return; int m = a.length/2; double[] l = Arrays.copyOfRange(a,0,m); double[] r = Arrays.copyOfRange(a,m,a.length); mergeSort(l); mergeSort(r); int i=0,j=0,k=0; while(i<l.length&&j<r.length) a[k++] = l[i]<=r[j]?l[i++]:r[j++]; while(i<l.length) a[k++]=l[i++]; while(j<r.length) a[k++]=r[j++]; }
